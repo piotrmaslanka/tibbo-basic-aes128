@@ -1,0 +1,66 @@
+' Copyright (c) 2011, Piotr Maœlanka <piotr.maslanka@henrietta.com.pl>
+' Licensed under BSD License
+' See <http://www.opensource.org/licenses/bsd-license.php> for license text
+
+' Rijndael inverse s-box
+
+sibox(0) = 82	sibox(1) = 9	sibox(2) = 106	sibox(3) = 213	sibox(4) = 48
+sibox(5) = 54	sibox(6) = 165	sibox(7) = 56	sibox(8) = 191	sibox(9) = 64
+sibox(10) = 163	sibox(11) = 158	sibox(12) = 129	sibox(13) = 243	sibox(14) = 215
+sibox(15) = 251	sibox(16) = 124	sibox(17) = 227	sibox(18) = 57	sibox(19) = 130
+sibox(20) = 155	sibox(21) = 47	sibox(22) = 255	sibox(23) = 135	sibox(24) = 52
+sibox(25) = 142	sibox(26) = 67	sibox(27) = 68	sibox(28) = 196	sibox(29) = 222
+sibox(30) = 233	sibox(31) = 203	sibox(32) = 84	sibox(33) = 123	sibox(34) = 148
+sibox(35) = 50	sibox(36) = 166	sibox(37) = 194	sibox(38) = 35	sibox(39) = 61
+sibox(40) = 238	sibox(41) = 76	sibox(42) = 149	sibox(43) = 11	sibox(44) = 66
+sibox(45) = 250	sibox(46) = 195	sibox(47) = 78	sibox(48) = 8	sibox(49) = 46
+sibox(50) = 161	sibox(51) = 102	sibox(52) = 40	sibox(53) = 217	sibox(54) = 36
+sibox(55) = 178	sibox(56) = 118	sibox(57) = 91	sibox(58) = 162	sibox(59) = 73
+sibox(60) = 109	sibox(61) = 139	sibox(62) = 209	sibox(63) = 37	sibox(64) = 114
+sibox(65) = 248	sibox(66) = 246	sibox(67) = 100	sibox(68) = 134	sibox(69) = 104
+sibox(70) = 152	sibox(71) = 22	sibox(72) = 212	sibox(73) = 164	sibox(74) = 92
+sibox(75) = 204	sibox(76) = 93	sibox(77) = 101	sibox(78) = 182	sibox(79) = 146
+sibox(80) = 108	sibox(81) = 112	sibox(82) = 72	sibox(83) = 80	sibox(84) = 253
+sibox(85) = 237	sibox(86) = 185	sibox(87) = 218	sibox(88) = 94	sibox(89) = 21
+sibox(90) = 70	sibox(91) = 87	sibox(92) = 167	sibox(93) = 141	sibox(94) = 157
+sibox(95) = 132	sibox(96) = 144	sibox(97) = 216	sibox(98) = 171	sibox(99) = 0
+
+sibox(100) = 140	sibox(101) = 188	sibox(102) = 211	sibox(103) = 10
+sibox(104) = 247	sibox(105) = 228	sibox(106) = 88		sibox(107) = 5
+sibox(108) = 184	sibox(109) = 179	sibox(110) = 69		sibox(111) = 6
+sibox(112) = 208	sibox(113) = 44		sibox(114) = 30		sibox(115) = 143
+sibox(116) = 202	sibox(117) = 63		sibox(118) = 15		sibox(119) = 2
+sibox(120) = 193	sibox(121) = 175	sibox(122) = 189	sibox(123) = 3
+sibox(124) = 1		sibox(125) = 19		sibox(126) = 138	sibox(127) = 107
+sibox(128) = 58		sibox(129) = 145	sibox(130) = 17		sibox(131) = 65
+sibox(132) = 79		sibox(133) = 103	sibox(134) = 220	sibox(135) = 234
+sibox(136) = 151	sibox(137) = 242	sibox(138) = 207	sibox(139) = 206
+sibox(140) = 240	sibox(141) = 180	sibox(142) = 230	sibox(143) = 115
+sibox(144) = 150	sibox(145) = 172	sibox(146) = 116	sibox(147) = 34
+sibox(148) = 231	sibox(149) = 173	sibox(150) = 53		sibox(151) = 133
+sibox(152) = 226	sibox(153) = 249	sibox(154) = 55		sibox(155) = 232
+sibox(156) = 28		sibox(157) = 117	sibox(158) = 223	sibox(159) = 110
+sibox(160) = 71		sibox(161) = 241	sibox(162) = 26		sibox(163) = 113
+sibox(164) = 29		sibox(165) = 41		sibox(166) = 197	sibox(167) = 137
+sibox(168) = 111	sibox(169) = 183	sibox(170) = 98		sibox(171) = 14
+sibox(172) = 170	sibox(173) = 24		sibox(174) = 190	sibox(175) = 27
+sibox(176) = 252	sibox(177) = 86		sibox(178) = 62		sibox(179) = 75
+sibox(180) = 198	sibox(181) = 210	sibox(182) = 121	sibox(183) = 32
+sibox(184) = 154	sibox(185) = 219	sibox(186) = 192	sibox(187) = 254
+sibox(188) = 120	sibox(189) = 205	sibox(190) = 90		sibox(191) = 244
+sibox(192) = 31		sibox(193) = 221	sibox(194) = 168	sibox(195) = 51
+sibox(196) = 136	sibox(197) = 7		sibox(198) = 199	sibox(199) = 49
+sibox(200) = 177	sibox(201) = 18		sibox(202) = 16		sibox(203) = 89
+sibox(204) = 39		sibox(205) = 128	sibox(206) = 236	sibox(207) = 95
+sibox(208) = 96		sibox(209) = 81		sibox(210) = 127	sibox(211) = 169
+sibox(212) = 25		sibox(213) = 181	sibox(214) = 74		sibox(215) = 13
+sibox(216) = 45		sibox(217) = 229	sibox(218) = 122	sibox(219) = 159
+sibox(220) = 147	sibox(221) = 201	sibox(222) = 156	sibox(223) = 239
+sibox(224) = 160	sibox(225) = 224	sibox(226) = 59		sibox(227) = 77
+sibox(228) = 174	sibox(229) = 42		sibox(230) = 245	sibox(231) = 176
+sibox(232) = 200	sibox(233) = 235	sibox(234) = 187	sibox(235) = 60
+sibox(236) = 131	sibox(237) = 83		sibox(238) = 153	sibox(239) = 97
+sibox(240) = 23		sibox(241) = 43		sibox(242) = 4		sibox(243) = 126
+sibox(244) = 186	sibox(245) = 119	sibox(246) = 214	sibox(247) = 38
+sibox(248) = 225	sibox(249) = 105	sibox(250) = 20		sibox(251) = 99
+sibox(252) = 85		sibox(253) = 33		sibox(254) = 12		sibox(255) = 125

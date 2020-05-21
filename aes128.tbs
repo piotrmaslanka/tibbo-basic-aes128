@@ -1,0 +1,256 @@
+' Copyright (c) 2011, Piotr Maœlanka <piotr.maslanka@henrietta.com.pl>
+' Licensed under BSD License
+' See <http://www.opensource.org/licenses/bsd-license.php> for license text
+
+' AES-128 implementation
+' It's totally workable. The problem is, it's just slow.
+
+dim sbox(256) as byte		' Rijndael's S-Box
+dim sibox(256) as byte		' Rijndael's inverse S-Box
+dim rcon(255) as byte		' Rijndael's Rcon table
+
+dim state(4, 4) as byte		' Rijndael's State - put data you want to encrypt here and call aes128_cipher() or aes128_decipher()
+dim key(4, 4) as byte		' Encryption key - put your key here and call rijndael_MakeKeySchedule()
+dim roundkey(11, 4, 4) as byte	' Round key
+
+function ffmult(a as byte, b as byte) as byte
+	' Perform Rijndael's finite field multiplication (4.2)
+	dim i as byte
+	dim p as byte = 0
+	dim was_a_one as boolean
+	for i = 0 to 7 
+		' Terminate if ab is zero
+		if (a = 0) or (b = 0) then 
+			exit for 
+		end if
+		' Check b's rightmost bit, and polynomial add on set
+		if (b and 1)=1 then
+			p = p xor a	
+		end if
+		' Now shift a left, doing corrections if leftmost bit is set
+		if (a and 128)=128 then
+			' If set...
+			a = (a * 2) xor &h1b
+		else
+			a = a * 2
+		end if
+		' Shift right b
+		b = b / 2
+	next i
+	ffmult = p
+end function
+
+sub aes128_initialize()
+	' Initialize Rijndael's S-Boxes. To be called by using program.
+	include "rijndael-sbox.tbh"
+	include "rijndael-sibox.tbh"
+	' hopefully we can calculate the rcon, because we know how to do it ;)
+	rcon(0) = &h8d
+	rcon(1) = 1
+	dim i as byte = 2
+	for i = 2 to 254
+		if i = 0 then 
+			exit for 
+		end if
+		if rcon(i-1) < &h80 then
+			rcon(i) = rcon(i-1)*2
+		else
+			rcon(i) = ffmult(rcon(i-1), 2)
+		end if
+	next i
+	
+end sub
+
+sub rijndael_SubBytes()
+	' Perform Rijndael's SubBytes() step
+	dim i, j as byte
+	for i = 0 to 3 
+		for j = 0 to 3
+			state(i, j) = sbox(state(i, j))
+		next j
+	next i
+end sub
+
+sub rijndael_InvSubBytes()
+	' Perform Rijndael's InvSubBytes() step
+	dim i, j as byte
+	for i = 0 to 3 
+		for j = 0 to 3
+			state(i, j) = sibox(state(i, j))
+		next j
+	next i
+end sub
+
+
+sub rijndael_ShiftRows()
+	' Perform Rijndael's ShiftRows() step
+	dim i as byte
+	' Shift row 1
+	i = state(1, 0)
+	state(1, 0)=state(1, 1)
+	state(1, 1)=state(1, 2)
+	state(1, 2)=state(1, 3)
+	state(1, 3)=i
+	' Shift row 2
+	i = state(2,0)
+	state(2, 0)=state(2, 2)
+	state(2, 2)=i
+	i = state(2, 3)
+	state(2, 3)=state(2, 1)
+	state(2, 1)=i
+	' Shift row 3
+	i = state(3, 3)
+	state(3, 3)=state(3, 2)
+	state(3, 2)=state(3, 1)
+	state(3, 1)=state(3, 0)
+	state(3, 0)=i
+end sub
+
+sub rijndael_InvShiftRows()
+	' Perform Rijndael's InvShiftRows() step
+	dim i as byte
+	' Shift row 1
+	i = state(1,0)
+	state(1, 0)=state(1, 3)
+	state(1, 3)=state(1, 2)
+	state(1, 2)=state(1, 1)
+	state(1, 1)=i
+	' Shift row 2
+	i = state(2, 0)
+	state(2, 0)=state(2, 2)
+	state(2, 2)=i
+	i = state(2, 3)
+	state(2, 3)=state(2, 1)
+	state(2, 1)=i
+	' Shift row 3
+	i = state(3, 0)
+	state(3, 0)=state(3, 1)
+	state(3, 1)=state(3, 2)
+	state(3, 2)=state(3, 3)
+	state(3, 3)=i
+end sub
+
+
+sub rijndael_MixColumns()
+	' Perform Rijndael's MixColumns() step
+	dim i as byte
+	dim s(4) as byte
+	for i = 0 to 3
+		s(0) = ffmult(2, state(0, i)) xor ffmult(3, state(1, i)) xor state(2, i) xor state(3, i)
+		s(1) = state(0, i) xor ffmult(2, state(1, i)) xor ffmult(3, state(2, i)) xor state(3, i)
+		s(2) = state(0, i) xor state(1, i) xor ffmult(2, state(2, i)) xor ffmult(3, state(3, i))
+		s(3) = ffmult(3, state(0, i)) xor state(1, i) xor state(2, i) xor ffmult(2, state(3, i))
+		state(0, i) = s(0)
+		state(1, i) = s(1)
+		state(2, i) = s(2)
+		state(3, i) = s(3)
+	next i
+end sub
+
+sub rijndael_InvMixColumns()
+	' Perform Rijndael's InvMixColumns() step
+	dim i as byte
+	dim s(4) as byte
+	for i = 0 to 3
+		s(0) = ffmult(14, state(0, i)) xor ffmult(11, state(1, i)) xor ffmult(13, state(2, i)) xor ffmult(9, state(3, i))
+		s(1) = ffmult(9, state(0, i)) xor ffmult(14, state(1, i)) xor ffmult(11, state(2, i)) xor ffmult(13, state(3, i))
+		s(2) = ffmult(13, state(0, i)) xor ffmult(9, state(1, i)) xor ffmult(14, state(2, i)) xor ffmult(11, state(3, i))
+		s(3) = ffmult(11, state(0, i)) xor ffmult(13, state(1, i)) xor ffmult(9, state(2, i)) xor ffmult(14, state(3, i))
+		state(0, i) = s(0)
+		state(1, i) = s(1)
+		state(2, i) = s(2)
+		state(3, i) = s(3)
+	next i
+end sub
+
+sub rijndael_AddRoundKey(roundno as byte)
+	' Perform Rijndael's AddRoundKey() step
+	dim i, j as byte
+	for i = 0 to 3
+		for j = 0 to 3
+			state(i, j) = state(i, j) xor roundkey(roundno, i, j)
+		next j
+	next i
+end sub
+
+sub rijndael_MakeKeySchedule()
+	' Generates key schedule from given key in key() array. To be called by using program.
+	dim i, j, k, l, rconi as byte
+	dim t(4) as byte
+	' First bytes of key schedule are the key
+	for i = 0 to 3
+		for j = 0 to 3
+			roundkey(0, i, j) = key(i, j)
+		next j
+	next i
+	' The rcon iteration value i is set to 1
+	rconi = 1
+	' Until we have b bytes of expanded key, we do the following
+	for k = 1 to 10
+		' Assign previous four bytes in the expanded key
+		for i = 0 to 3
+			t(i) = roundkey(k-1, i, 0)
+		next i
+		' Apply key schedule core
+			' Rotate operation
+			i = t(0)
+			t(0) = t(3)
+			t(3) = t(2)
+			t(2) = t(1)
+			t(1) = i
+			' S-Box
+			t(0) = sbox(t(0))
+			t(1) = sbox(t(1))
+			t(2) = sbox(t(2))
+			t(3) = sbox(t(3))
+			' Rcon first byte
+			t(0) = t(0) xor rcon(rconi)
+		' Increment rconi
+		rconi = rconi + 1
+		' t is our new first 4 bytes of key
+		for i = 0 to 3
+			roundkey(k, i, 0) = t(i) xor roundkey(k-1, i, 0)
+		next i
+		' Generate next 12 bytes
+		for l = 1 to 3 
+			for i = 0 to 3 
+				roundkey(k, i, l) = roundkey(k, i, l-1) xor roundkey(k-1, i, l)
+			next i
+		next l
+	next k
+end sub
+
+sub aes128_cipher()
+	' Do a Rijndael Cipher(). Assumes state() as input and generated key schedule. To be called by using program.
+	dim round as byte
+	rijndael_AddRoundKey(0)
+	
+	for round = 1 to 9
+	
+		rijndael_SubBytes()
+		rijndael_ShiftRows()
+		rijndael_MixColumns()
+		rijndael_AddRoundKey(round)
+	next round
+	
+	rijndael_SubBytes()
+	rijndael_ShiftRows()
+	rijndael_AddRoundKey(10)	
+end sub
+
+sub aes128_decipher()
+	' Do a Rijndael InvCipher(). Assumes state() as input and generated key schedule. To be called by using program.
+	dim round as byte	
+	rijndael_AddRoundKey(10)
+	rijndael_InvShiftRows()
+	rijndael_InvSubBytes()
+	
+	for round = 9 to 1 step -1
+		rijndael_AddRoundKey(round)
+		rijndael_InvMixColumns()
+		rijndael_InvShiftRows()
+		rijndael_InvSubBytes()
+	next round
+	
+	rijndael_AddRoundKey(0)
+end sub
